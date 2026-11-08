@@ -313,7 +313,7 @@ function cartPanel(goods){const fee=feeN(),tot=goods+fee,pre=Math.round(tot*.2);
 function bindCart(ids,goods){$('go').onclick=async()=>{
   if(!profOK(prof)){toast(t('reg_need'));regModal(()=>renderPage());return}
   const n=$('on').value.trim(),ph=$('op').value.replace(/[\\s-]/g,''),a=$('ad')?$('ad').value.trim():'';
-  if(!n||!/^([+] ?992)?[0-9]{9}$/.test(ph.replace(/ /g,'')))return toast(t('badph'));
+  if(!n||!/^(\+?992)?[0-9]{9}$/.test(ph))return toast(t('badph'));
   if(dm==='delivery'&&!a)return toast(t('badf'));
   const p='+992'+ph.slice(-9),fee=feeN(),tot=goods+fee,pre=Math.round(tot*.2),
     items=ids.map(i=>({id:i,n:L(find(i),'tr','tt'),q:cart[i],p:find(i).price,c:find(i).cat})),
@@ -323,7 +323,7 @@ function bindCart(ids,goods){$('go').onclick=async()=>{
   let key='';
   try{
     const ref=await db.ref('orders').push(o);key=ref.key;
-    if(me.uid)await db.ref('users/'+me.uid+'/orders/'+key).set(o);
+    if(me.uid){try{await db.ref('users/'+me.uid+'/orders/'+key).set(o)}catch(e){/* The main order is already saved; the customer history mirror is optional. */}}
   }catch(e){
     toast('Заказ не сохранился на сайте. Отправьте его через мессенджер.');
     chooser(orderText);return;
@@ -536,14 +536,14 @@ try{firebase.initializeApp({apiKey:"AIzaSyD0-O2Hq-P9zeRzcExwQ90Z43xUMR0IwHQ",aut
   db=firebase.database();auth=firebase.auth();
   db.ref('settings').on('value',s=>{ST=s.val()||{};if(tab==='orders')renderPage()});db.ref('ratings').on('value',s=>{RT=s.val()||{};grid()});db.ref('banners').on('value',s=>{const v=s.val()||{};BAN=Object.keys(v).map(k=>({...v[k],id:k})).sort((a,b)=>(a.ord||0)-(b.ord||0));renderCar();if(view==='admin')admin()});
   drawGate();setTimeout(()=>{if(!authReady){authReady=true;gateOK=true;drawGate()}},8000);
-  db.ref('products').on('value',s=>{const v=s.val()||{};S.products=Object.keys(v).map(k=>({...v[k],id:k,media:v[k].media||[]}));ui();if(view==='admin')admin()},()=>{S.products=SEED;ui()});
+  db.ref('products').on('value',s=>{const v=s.val()||{};S.products=Object.keys(v).map(k=>({...v[k],id:k,media:v[k].media||[]}));ui();if(view==='admin')admin()},()=>{S.products=[];ui();toast('Не удалось загрузить товары. Проверьте подключение.')});
   auth.onAuthStateChanged(u=>{authReady=true;me={uid:u?u.uid:'',name:u&&u.displayName||'',phone:me.phone,email:u?u.email:''};
     $('adm').style.display=isAdm()?'block':'none';
     if(ordRef){ordRef.off();ordRef=null;orders=[]}
     if(isAdm()){ordRef=db.ref('orders').orderByChild('date').limitToLast(100);ordRef.on('value',s=>{orders=[];s.forEach(c=>{orders.unshift({...c.val(),key:c.key})});if(view==='admin')admin()})}
     if(u){db.ref('users/'+u.uid+'/phone').once('value',s=>{if(s.val()){me.phone=s.val();if(tab==='prof')renderPage()}});db.ref('users/'+u.uid+'/orders').once('value',s=>{const v=s.val()||{};Object.keys(v).forEach(k=>{if(!myOrders.some(o=>o.key===k))myOrders.push({...v[k],key:k})});myOrders.sort((a,b)=>b.date-a.date);saveOrd();watchOrders();if(tab!=='home')renderPage()})}
     if(u){db.ref('users/'+u.uid+'/profile').once('value',s=>{const v=s.val();if(v){prof=v;try{localStorage.setItem('is_prof',JSON.stringify(v))}catch(e){}me.name=v.first+' '+v.last;me.phone=v.phone}else{try{const l=JSON.parse(localStorage.getItem('is_prof')||'null');prof=l&&l.uid===u.uid?l:null}catch(e){prof=null}}drawGate();if(tab!=='home')renderPage()})}else{try{const l=JSON.parse(localStorage.getItem('is_prof')||'null');prof=l&&!l.uid?l:null}catch(e){prof=null}if(prof){me.name=prof.first+' '+prof.last;me.phone=prof.phone}drawGate()}
-    if(tab!=='home')renderPage()})}catch(e){S.products=SEED;ui()}
+    if(tab!=='home')renderPage()})}catch(e){S.products=[];ui();toast('Не удалось подключиться к магазину. Проверьте интернет.')}
 </script>
 </body>
 </html>
