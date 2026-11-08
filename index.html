@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Insofstore.tj — Онлайн-магазин электроники и гаджетов</title>
+<meta name="description" content="Insofstore.tj — интернет-магазин электроники и гаджетов в Душанбе. Наушники, смарт-часы и аксессуары. Заказ онлайн на русском и таджикском языках.">
+<meta name="theme-color" content="#4f2222">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Insofstore.tj — электроника и гаджеты в Душанбе">
+<meta property="og:description" content="Наушники, смарт-часы и гаджеты. Каталог и заказ онлайн.">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -185,6 +190,40 @@ header .lang{display:none}
 .gcard{background:var(--card);color:var(--tx);border-radius:20px;padding:16px;text-align:left}.gcard .in{margin-bottom:8px}
 @media(min-width:900px){.hb{display:none!important}.nav{display:flex;flex-direction:column;position:fixed;left:18px;top:50%;transform:translateY(-50%);bottom:auto;right:auto;width:88px;gap:6px;padding:12px 6px;border:1px solid var(--bd);border-radius:26px;box-shadow:0 10px 30px rgba(0,0,0,.12);justify-content:flex-start}.nl{min-width:0;width:100%;padding:6px 0}.nav .nb{right:10px}main{padding-left:122px}.sl{aspect-ratio:auto;height:170px;min-height:0}.grid{gap:14px}}
 .stl{grid-template-columns:repeat(2,minmax(0,1fr))}@media(min-width:640px){.stl{grid-template-columns:repeat(4,minmax(0,1fr))}}.stc{min-width:0}.sumr b{text-align:right;margin-left:10px}.sumr span:first-child{flex:none}
+
+/* Insofstore brand palette: consistent burgundy, ivory and gold */
+:root{
+  --bg:#f7f3ef;--card:#fff;--tx:#2b1515;--mu:#7d6b68;
+  --br:#4f2222;--br2:#6d2c2c;--gold:#d4ae6a;--bd:#e8ded7;
+  --pt:#fff;--hd:#4f2222;--ic:#4f2222;--red:#b4233c;--ok:#387a55;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#160d0d;--card:#241616;--tx:#f7eee8;--mu:#c2aaa2;
+  --br:#6d2c2c;--br2:#8b4141;--gold:#d4ae6a;--bd:#49302d;
+  --pt:#fff;--hd:#230f10;--ic:#e1bc78;--red:#e05a70;--ok:#70b58a;
+  color-scheme:dark;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]):not([data-theme="dark"]){
+    --bg:#160d0d;--card:#241616;--tx:#f7eee8;--mu:#c2aaa2;
+    --br:#6d2c2c;--br2:#8b4141;--gold:#d4ae6a;--bd:#49302d;
+    --pt:#fff;--hd:#230f10;--ic:#e1bc78;--red:#e05a70;--ok:#70b58a;
+    color-scheme:dark;
+  }
+}
+body::before,header{background:var(--hd)}
+header{background:linear-gradient(100deg,var(--hd),var(--br2))}
+.lang button.on{background:var(--gold);color:var(--br)}
+.adm{background:var(--gold);color:var(--br)}
+.sb{border-color:var(--gold)}
+.sb span{background:var(--gold);color:var(--br)}
+.sl{background:linear-gradient(120deg,var(--br),var(--br2));color:#fff}
+.sl.g2{background:linear-gradient(120deg,#8a642b,var(--gold));color:#241616}
+.sl.g3{background:linear-gradient(120deg,#281010,var(--br))}
+.hc{background:linear-gradient(135deg,var(--hd),var(--br2));color:#fff}
+.toast{background:#2b1515;color:#fff;border:1px solid #6d2c2c}
+
 </style>
 </head>
 <body>
@@ -271,15 +310,28 @@ function regModal(cb){const gc=!!auth&&!inApp();modal(`<h2 style="margin-bottom:
   $('rgs').onclick=()=>{const v=readF('r_');if(!v)return;saveProf(v);close();toast('✓');if(cb)cb();if(tab!=='home')renderPage()}}
 function cartPanel(goods){const fee=feeN(),tot=goods+fee,pre=Math.round(tot*.2);
   return `<div class="pb"><div class="dm"><div class="opt ${dm==='delivery'?'on':''}" data-dm="delivery"><b>${t('dm_del')}</b><span>${feeTxt()}</span></div><div class="opt ${dm==='pickup'?'on':''}" data-dm="pickup"><b>${t('dm_pick')}</b><span>${esc(pickN())}</span></div></div><input class="in" id="on" placeholder="${t('nm')}" value="${esc(me.name)}"><input class="in" id="op" type="tel" placeholder="${t('ph')}" value="${esc(me.phone)}">${dm==='delivery'?`<input class="in" id="ad" placeholder="${t('addr')}" value="${esc(prof?dName(prof.dist)+', '+prof.addr:'')}">`:''}<div class="sumr"><span>${t('goods')}</span><b>${goods} TJS</b></div>${dm==='delivery'?`<div class="sumr"><span>${t('dm_del')}</span><b>${+ST.fee>0?fee+' TJS':feeTxt()}</b></div>`:''}<div class="sumr big"><span>${t('total')}</span><span>${tot} TJS</span></div><div class="sumr" style="color:var(--mu)"><span>${t('prepay')}</span><b>≈ ${pre} TJS</b></div><button class="b g" id="go" style="width:100%;margin-top:10px">${t('order')}</button></div>`}
-function bindCart(ids,goods){$('go').onclick=()=>{
+function bindCart(ids,goods){$('go').onclick=async()=>{
   if(!profOK(prof)){toast(t('reg_need'));regModal(()=>renderPage());return}
-  const n=$('on').value.trim(),ph=$('op').value.replace(/[\s-]/g,''),a=$('ad')?$('ad').value.trim():'';
-  if(!n||!/^(\+?992)?[0-9]{9}$/.test(ph))return toast(t('badph'));if(dm==='delivery'&&!a)return toast(t('badf'));
-  const p='+992'+ph.slice(-9),fee=feeN(),tot=goods+fee,pre=Math.round(tot*.2),items=ids.map(i=>({id:i,n:L(find(i),'tr','tt'),q:cart[i],p:find(i).price,c:find(i).cat})),
-    o={name:n,phone:p,addr:dm==='pickup'?pickN():a,dm,fee,total:tot,pre,date:Date.now(),status:'new',uid:me.uid||'',items};let key='l'+o.date;
-  try{if(db){const r=db.ref('orders').push(o);key=r.key;if(me.uid)db.ref('users/'+me.uid+'/orders/'+key).set(o)}}catch(e){}
-  myOrders.unshift({...o,key});saveOrd();watchOrders();me.phone=p;try{localStorage.setItem('is_ph',p)}catch(e){}
-  chooser(t('hello')+'\n'+items.map(i=>'- '+i.n+' × '+i.q+' = '+i.p*i.q+' TJS').join('\n')+'\n'+t('goods')+': '+goods+' TJS\n'+t(dm==='pickup'?'dm_pick':'dm_del')+(fee?': '+fee+' TJS':'')+'\n'+t('total')+': '+tot+' TJS\n'+t('prepay')+': ≈ '+pre+' TJS\n👤 '+n+'\n📞 '+p+'\n📍 '+o.addr);cart={};keep();renderPage()}}
+  const n=$('on').value.trim(),ph=$('op').value.replace(/[\\s-]/g,''),a=$('ad')?$('ad').value.trim():'';
+  if(!n||!/^(\+?992)?[0-9]{9}$/.test(ph))return toast(t('badph'));
+  if(dm==='delivery'&&!a)return toast(t('badf'));
+  const p='+992'+ph.slice(-9),fee=feeN(),tot=goods+fee,pre=Math.round(tot*.2),
+    items=ids.map(i=>({id:i,n:L(find(i),'tr','tt'),q:cart[i],p:find(i).price,c:find(i).cat})),
+    o={name:n,phone:p,addr:dm==='pickup'?pickN():a,dm,fee,total:tot,pre,date:Date.now(),status:'new',uid:me.uid||'',items};
+  const orderText=t('hello')+'\\n'+items.map(i=>'- '+i.n+' × '+i.q+' = '+i.p*i.q+' TJS').join('\\n')+'\\n'+t('goods')+': '+goods+' TJS\\n'+t(dm==='pickup'?'dm_pick':'dm_del')+(fee?': '+fee+' TJS':'')+'\\n'+t('total')+': '+tot+' TJS\\n'+t('prepay')+': ≈ '+pre+' TJS\\n👤 '+n+'\\n📞 '+p+'\\n📍 '+o.addr;
+  if(!db){toast('Нет связи с базой. Отправьте заказ через мессенджер.');chooser(orderText);return}
+  let key='';
+  try{
+    const ref=await db.ref('orders').push(o);key=ref.key;
+    if(me.uid){try{await db.ref('users/'+me.uid+'/orders/'+key).set(o)}catch(e){/* The main order is already saved; the customer history mirror is optional. */}}
+  }catch(e){
+    toast('Заказ не сохранился на сайте. Отправьте его через мессенджер.');
+    chooser(orderText);return;
+  }
+  myOrders.unshift({...o,key});saveOrd();watchOrders();me.phone=p;
+  try{localStorage.setItem('is_ph',p)}catch(e){}
+  chooser(orderText);cart={};keep();renderPage()
+}}
 function settingsHtml(){const s=ST||{};return `<div class="pb"><span class="lb">Стоимость доставки по Душанбе, TJS (0 = бесплатно, пусто = «уточним»)</span><input class="in" id="sfee" type="number" min="0" value="${s.fee===undefined?'':s.fee}"><span class="lb">Место самовывоза (русский)</span><input class="in" id="spr" value="${esc(s.pick_ru||'')}" placeholder="Саховат (подземка Саховат)"><span class="lb">Ҷойи худгирӣ (тоҷикӣ)</span><input class="in" id="spt" value="${esc(s.pick_tj||'')}" placeholder="Саховат (гузаргоҳи зеризаминӣ)"><span class="lb">Текст про предоплату (русский, пусто = стандартный)</span><textarea class="in" id="spre" rows="5">${esc(s.pre_ru||'')}</textarea><span class="lb">Матн дар бораи пешпардохт (тоҷикӣ)</span><textarea class="in" id="sprt" rows="5">${esc(s.pre_tj||'')}</textarea><button class="b" id="ssv" style="width:100%">Сохранить настройки</button></div>`}
 function bindSettings(){$('ssv').onclick=()=>{const f=$('sfee').value,o={pick_ru:$('spr').value.trim(),pick_tj:$('spt').value.trim(),pre_ru:$('spre').value.trim(),pre_tj:$('sprt').value.trim()};if(f!=='')o.fee=Math.max(0,+f||0);db.ref('settings').set(o).then(()=>toast('Сохранено ✓'),()=>toast('Нет доступа'))}}
 /* ---------- Подкатегории, рейтинги, отзывы, статусы заказов ---------- */
@@ -484,14 +536,14 @@ try{firebase.initializeApp({apiKey:"AIzaSyD0-O2Hq-P9zeRzcExwQ90Z43xUMR0IwHQ",aut
   db=firebase.database();auth=firebase.auth();
   db.ref('settings').on('value',s=>{ST=s.val()||{};if(tab==='orders')renderPage()});db.ref('ratings').on('value',s=>{RT=s.val()||{};grid()});db.ref('banners').on('value',s=>{const v=s.val()||{};BAN=Object.keys(v).map(k=>({...v[k],id:k})).sort((a,b)=>(a.ord||0)-(b.ord||0));renderCar();if(view==='admin')admin()});
   drawGate();setTimeout(()=>{if(!authReady){authReady=true;gateOK=true;drawGate()}},8000);
-  db.ref('products').on('value',s=>{const v=s.val()||{};S.products=Object.keys(v).map(k=>({...v[k],id:k,media:v[k].media||[]}));ui();if(view==='admin')admin()},()=>{S.products=SEED;ui()});
+  db.ref('products').on('value',s=>{const v=s.val()||{};S.products=Object.keys(v).map(k=>({...v[k],id:k,media:v[k].media||[]}));ui();if(view==='admin')admin()},()=>{S.products=[];ui();toast('Не удалось загрузить товары. Проверьте подключение.')});
   auth.onAuthStateChanged(u=>{authReady=true;me={uid:u?u.uid:'',name:u&&u.displayName||'',phone:me.phone,email:u?u.email:''};
     $('adm').style.display=isAdm()?'block':'none';
     if(ordRef){ordRef.off();ordRef=null;orders=[]}
     if(isAdm()){ordRef=db.ref('orders').orderByChild('date').limitToLast(100);ordRef.on('value',s=>{orders=[];s.forEach(c=>{orders.unshift({...c.val(),key:c.key})});if(view==='admin')admin()})}
     if(u){db.ref('users/'+u.uid+'/phone').once('value',s=>{if(s.val()){me.phone=s.val();if(tab==='prof')renderPage()}});db.ref('users/'+u.uid+'/orders').once('value',s=>{const v=s.val()||{};Object.keys(v).forEach(k=>{if(!myOrders.some(o=>o.key===k))myOrders.push({...v[k],key:k})});myOrders.sort((a,b)=>b.date-a.date);saveOrd();watchOrders();if(tab!=='home')renderPage()})}
     if(u){db.ref('users/'+u.uid+'/profile').once('value',s=>{const v=s.val();if(v){prof=v;try{localStorage.setItem('is_prof',JSON.stringify(v))}catch(e){}me.name=v.first+' '+v.last;me.phone=v.phone}else{try{const l=JSON.parse(localStorage.getItem('is_prof')||'null');prof=l&&l.uid===u.uid?l:null}catch(e){prof=null}}drawGate();if(tab!=='home')renderPage()})}else{try{const l=JSON.parse(localStorage.getItem('is_prof')||'null');prof=l&&!l.uid?l:null}catch(e){prof=null}if(prof){me.name=prof.first+' '+prof.last;me.phone=prof.phone}drawGate()}
-    if(tab!=='home')renderPage()})}catch(e){S.products=SEED;ui()}
+    if(tab!=='home')renderPage()})}catch(e){S.products=[];ui();toast('Не удалось подключиться к магазину. Проверьте интернет.')}
 </script>
 </body>
 </html>
