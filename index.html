@@ -4,9 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Insofstore.tj — Онлайн-магазин электроники и гаджетов</title>
+<meta name="description" content="Insofstore.tj — наушники, смарт-часы, пауэрбанки и гаджеты в Душанбе. Доставка по городу, 20% предоплата.">
+<meta name="theme-color" content="#8a1f3d">
+<meta property="og:title" content="Insofstore.tj — Гаджеты в Душанбе">
+<meta property="og:description" content="Наушники, смарт-часы, пауэрбанки. Доставка по Душанбе, гарантия.">
+<meta property="og:type" content="website">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <style>
 :root{--bg:#f6f0eb;--card:#fff;--tx:#2b1515;--mu:#8b7674;--br:#4f2222;--br2:#6d2c2c;--gold:#d4ae6a;--bd:#eadfd8;--red:#c8243c;--ok:#1d8a52;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a0c0c;--card:#2a1515;--tx:#f6ece6;--mu:#bba5a2;--bd:#402424;color-scheme:dark}}
@@ -223,7 +229,7 @@ const CATS={all:'grid',watch:'watch',audio:'headphones',power:'battery',other:'p
 let lang='ru',cat='all',query='',sort='0',favOnly=false,cart={},fav=[],edit=null,assets=null;
 try{lang=localStorage.getItem('is_lang')||'ru';cart=JSON.parse(localStorage.getItem('is_cart')||'{}');fav=JSON.parse(localStorage.getItem('is_fav')||'[]')}catch(e){}
 const t=k=>T[lang][k];
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const L=(p,a,b)=>lang==='tj'?(p[b]||p[a]):(p[a]||p[b]);
 const find=id=>S.products.find(p=>p.id===id);
 const isVid=u=>/\.(mp4|webm|mov)$/i.test(u);
@@ -233,7 +239,7 @@ function toast(m){const d=document.createElement('div');d.className='toast';d.te
 const disc=p=>p.old>p.price?Math.round(100-p.price/p.old*100):0;
 const price=p=>`<div class="pr ${disc(p)?'dc':''}"><b>${p.price} TJS</b>${disc(p)?`<s>${p.old} TJS</s>`:''}</div>`;
 IC.chart='<path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/>';
-let lastFound=true,qt;
+let lastFound=true,qt,qd;
 const LM={а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ж:'j',з:'z',и:'i',й:'i',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'c',ш:'s',щ:'s',ъ:'',ы:'i',ь:'',э:'e',ю:'u',я:'a',ӣ:'i',ӯ:'u',қ:'k',ғ:'g',ҳ:'h',ҷ:'j'};
 function lat(s){s=String(s||'').toLowerCase().replace(/ё/g,'е').replace(/[а-яӣӯқғҳҷ]/g,c=>LM[c]??c);
   return s.replace(/sch|sh/g,'s').replace(/ch|ts/g,'c').replace(/zh/g,'j').replace(/kh/g,'h').replace(/ph/g,'f').replace(/w/g,'v').replace(/y/g,'i').replace(/x/g,'ks').replace(/q/g,'k').replace(/[^a-z0-9 ]+/g,' ').replace(/(.)\1+/g,'$1').replace(/\s+/g,' ').trim()}
@@ -248,7 +254,7 @@ function smart(list,q){const tk=lat(q).split(' ').filter(w=>w.length>1&&!STOP.ha
     tk.forEach((w,i)=>{let b=0;if(tx.includes(w))b=3;else if(tc[i]&&tc[i]===p.cat)b=2.5;else{const l=lim(w);if(l&&ws.some(x=>x.length>=4&&lev(x,w)<=l))b=2}if(b)s+=b;else all=false});return{p,s,all}});
   const a=sc.filter(x=>x.all);return(a.length?a:sc.filter(x=>x.s>0)).sort((x,y)=>y.s-x.s).map(x=>x.p)}
 const emptyHtml=()=>query.trim()||(!favOnly&&cat!=='all')?`<div class="none"><div class="ic2" style="margin:0 auto 12px;width:64px;height:64px">${ic('search',30)}</div><h3>${t('sorry')}</h3><p>${t('sorryh')}</p><button class="b" onclick="clearQ()">${t('showall')}</button><button class="b o" onclick="show('sup')">${t('writeus')}</button></div>`:`<p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--mu)">${favOnly?t('nofav'):t('none')}</p>`;
-function clearQ(){query='';$('q').value='';cat='all';sub2='all';ui()}
+function clearQ(){query='';$('q').value='';cat='all';sub2='all';favOnly=false;ui()}
 function trackQ(){clearTimeout(qt);qt=setTimeout(()=>{const q=query.trim().toLowerCase().replace(/[.#$\[\]\/]/g,' ').replace(/\s+/g,' ').slice(0,38);if(q.length<3||!db)return;const k='is_q_'+q;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}const f=lastFound;db.ref('searches/'+q).transaction(v=>({n:((v&&v.n)||0)+1,miss:((v&&v.miss)||0)+(f?0:1),q,t:Date.now()})).catch(()=>{})},1600)}
 function loadStats(){if(!db)return;Promise.all([db.ref('searches').orderByChild('n').limitToLast(30).once('value'),db.ref('views').once('value')]).then(([a,b])=>{const s=[];a.forEach(c=>{s.push(c.val())});s.sort((x,y)=>y.n-x.n);const vw=b.val()||{},v=Object.keys(vw).filter(find).map(k=>({p:find(k),n:vw[k]})).sort((x,y)=>y.n-x.n).slice(0,15),miss=s.filter(x=>x.miss>0).sort((x,y)=>y.miss-x.miss).slice(0,10),row=(l,r)=>`<div class="ai"><span>${l}</span><b>${r}</b></div>`,none='<p style="color:var(--mu)">Пока нет данных</p>';
   if($('sts'))$('sts').innerHTML=`<h3 class="sec">Что ищут чаще всего</h3>${s.map(x=>row(esc(x.q),x.n+' ×')).join('')||none}<h3 class="sec">Искали, но не нашли (чего не хватает в магазине)</h3>${miss.map(x=>row(esc(x.q),x.miss+' ×')).join('')||none}<h3 class="sec">Самые просматриваемые товары</h3>${v.map(x=>row(esc(x.p.tr||x.p.tt),x.n+' просм.')).join('')||none}`}).catch(()=>{if($('sts'))$('sts').innerHTML='<p>Нет доступа. Проверьте правила базы (firebase-rules.json).</p>'})}
@@ -295,10 +301,10 @@ function drawSubs(){const el=$('subs'),h=$('home');if(!el)return;h.classList.tog
 const ost=o=>o.status==='done'?'delivered':(o.status||'new');
 const rtHtml=p=>{const r=RT[p.id];return r&&r.n?`<div class="rt"><b>★</b> ${(r.s/r.n).toFixed(1)} · ${r.n}</div>`:`<div class="rt" style="visibility:hidden"><b>★</b> 0</div>`};
 const stars=n=>[1,2,3,4,5].map(i=>`<span style="color:${i<=Math.round(n)?'#e0a100':'var(--bd)'}">★</span>`).join('');
-function watchOrders(){if(!db||!me.uid)return;myOrders.slice(0,20).forEach(o=>{const k=o.key;if(!k||k[0]==='l'||watched[k])return;watched[k]=1;db.ref('orders/'+k+'/status').on('value',s=>{const v=s.val();if(v&&o.status!==v){o.status=v;saveOrd();if(tab!=='home')renderPage()}},()=>{})})}
+function watchOrders(){if(!db||!me.uid)return;myOrders.slice(0,20).forEach(o=>{const k=o.key;if(!k||k[0]==='l'||watched[k])return;watched[k]=1;db.ref('orders/'+k+'/status').on('value',s=>{const v=s.val();if(v&&o.status!==v){o.status=v;saveOrd();const old=document.title;document.title='● '+t('os_'+ost(o))+' — Insofstore';setTimeout(()=>document.title=old,4000);if(tab!=='home')renderPage()}},()=>{})})}
 const STC={new:'#8a8a8a',confirmed:'var(--br)',delivered:'#1d8a52'};
 function histHtml(){return myOrders.length?myOrders.map(o=>{const s=ost(o),ok=s==='delivered'&&o.key&&o.key[0]!=='l'&&me.uid;
-  return `<div class="pb"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--mu)"><span>${new Date(o.date).toLocaleString('ru-RU')}</span><span style="background:${STC[s]||STC.new};color:#fff;padding:3px 9px;border-radius:9px;font-weight:700;font-size:11px">${t('os_'+s)}</span></div>${(o.items||[]).map(i=>`<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px"><span style="flex:1">• ${esc(i.n)} × ${i.q}</span>${ok&&find(i.id)&&!rvDone.has(o.key+'_'+i.id)?`<button class="b o" data-rv="${o.key}|${i.id}" style="flex:none;padding:6px 10px;font-size:12px">${t('review')}</button>`:''}</div>`).join('')}<div style="margin-top:8px;text-align:right"><b>${o.total} TJS</b></div></div>`}).join(''):`<p class="emp">${t('nohist')}</p>`}
+  return `<div class="pb"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--mu)"><span>${new Date(o.date).toLocaleString('ru-RU')}</span><span style="background:${STC[s]||STC.new};color:#fff;padding:3px 9px;border-radius:9px;font-weight:700;font-size:11px">${t('os_'+s)}</span>${s==='new'&&o.key&&o.key[0]!=='l'?`<button class="b rd" data-oc="${o.key}" style="flex:none;padding:5px 9px;font-size:12px">✕</button>`:''}</div>${(o.items||[]).map(i=>`<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px"><span style="flex:1">• ${esc(i.n)} × ${i.q}</span>${ok&&find(i.id)&&!rvDone.has(o.key+'_'+i.id)?`<button class="b o" data-rv="${o.key}|${i.id}" style="flex:none;padding:6px 10px;font-size:12px">${t('review')}</button>`:''}</div>`).join('')}<div style="margin-top:8px;text-align:right"><b>${o.total} TJS</b></div></div>`}).join(''):`<p class="emp">${t('nohist')}</p>`}
 const ordersMini=()=>myOrders.length?`<h3 class="sec">${t('myorders')}</h3>`+myOrders.slice(0,3).map(o=>{const s=ost(o);return `<div class="li" data-go="1"><span>${ic('box')}</span><b style="font-size:13px">${esc((o.items||[]).map(i=>i.n).join(', ').slice(0,60))}<br><em style="font-weight:400">${o.total} TJS</em></b><em style="color:${s==='delivered'?'#1d8a52':s==='confirmed'?'var(--ic)':'var(--mu)'};font-weight:700;font-size:12px">${t('os_'+s)}</em></div>`}).join(''):'';
 function loadReviews(pid){const box=$('rvs');if(!box||!db)return;
   db.ref('reviews/'+pid).orderByChild('date').limitToLast(20).once('value').then(s=>{const l=[];s.forEach(c=>{l.unshift({...c.val(),key:c.key})});
@@ -310,7 +316,7 @@ function loadReviews(pid){const box=$('rvs');if(!box||!db)return;
 function reviewForm(oid,pid){const p=find(pid);if(!p)return;rvStars=5;rvPh=[];
   modal(`<h2 style="margin-bottom:4px">${t('rv_w')}</h2><p style="color:var(--mu);font-size:13px;margin-bottom:10px">${esc(L(p,'tr','tt'))}</p><div id="rst" style="font-size:36px;letter-spacing:4px;cursor:pointer;margin-bottom:10px"></div><textarea class="in" id="rtx" rows="4" maxlength="600" placeholder="${t('rv_txt')}"></textarea><span class="lb">${t('rv_photo')}</span><input class="in" type="file" id="rph" accept="image/*" multiple><div class="pv" id="rpv"></div>`,`<div class="bar"><button class="b" id="rsd">${t('rv_send')}</button></div>`);
   const drawS=()=>{$('rst').innerHTML=[1,2,3,4,5].map(i=>`<span data-s="${i}" style="color:${i<=rvStars?'#e0a100':'var(--bd)'}">★</span>`).join('');$('rst').querySelectorAll('span').forEach(s=>s.onclick=()=>{rvStars=+s.dataset.s;drawS()})};drawS();
-  $('rph').onchange=async()=>{try{for(const f of $('rph').files){if(rvPh.length>=3)break;rvPh.push(await shrink(f,700,.65))}$('rpv').innerHTML=rvPh.map(u=>`<span><img src="${u}" alt=""></span>`).join('')}catch(e){toast('Ошибка загрузки')}};
+  $('rph').onchange=async()=>{try{for(const f of $('rph').files){if(rvPh.length>=3)break;rvPh.push(await uploadImg(f,700,.65))}$('rpv').innerHTML=rvPh.map(u=>`<span><img src="${u}" alt=""></span>`).join('')}catch(e){toast('Ошибка загрузки')}};
   $('rsd').onclick=()=>{const o={uid:me.uid,name:(me.name||'').trim().split(' ').filter(Boolean).map((w,i)=>i?w[0]+'.':w).join(' ')||'Клиент',stars:rvStars,text:$('rtx').value.trim(),date:Date.now()};if(rvPh.length)o.photos=rvPh;
     db.ref('reviews/'+pid+'/'+oid).set(o).then(()=>{db.ref('ratings/'+pid).transaction(v=>({n:(v?v.n:0)+1,s:(v?v.s:0)+rvStars}));rvDone.add(oid+'_'+pid);try{localStorage.setItem('is_rv',JSON.stringify([...rvDone]))}catch(e){}toast(t('rv_thanks'));open1(pid)},()=>toast('Не удалось отправить отзыв'))}}
 function ui(){document.documentElement.lang=lang==='tj'?'tg':'ru';$('q').placeholder=t('search');
@@ -330,7 +336,7 @@ function grid(){const q=query.toLowerCase();
     if(g('data-f')){const i=g('data-f').dataset.f;fav=fav.includes(i)?fav.filter(x=>x!==i):[...fav,i];keep();return grid()}
     if(g('data-a')){add(g('data-a').dataset.a);return grid()}if(g('data-m')){add(g('data-m').dataset.m,-1);return grid()}if(g('data-p')){add(g('data-p').dataset.p);return grid()}
     open1(c.dataset.id)})}
-function add(id,n=1){if(n>0&&find(id)&&find(id).stock===0)return toast(t('out'));cart[id]=(cart[id]||0)+n;if(cart[id]<=0)delete cart[id];keep();if(n>0)toast(t('added'))}
+function add(id,n=1){const p=find(id);if(!p)return;if(n>0&&p.stock===0)return toast(t('out'));if(n>0&&p.stock!=null&&(cart[id]||0)+n>p.stock)return toast(t('out'));cart[id]=(cart[id]||0)+n;if(cart[id]<=0)delete cart[id];keep();if(n>0)toast(t('added'))}
 function modal(h,bar=''){$('ov').innerHTML=`<div class="md ${bar?'wb':''}" id="md"><div class="sh" id="sh"><div class="mc"><button class="x" id="x">✕</button>${h}</div></div>${bar}</div>`;document.body.style.overflow='hidden';$('x').onclick=close;$('sh').onclick=e=>{if(e.target.id==='sh')close()};$('md').onclick=e=>{if(e.target.id==='md')close()}}
 function chooser(text){const s=document.createElement('div');s.className='md';s.style.zIndex=300;
   s.innerHTML=`<div class="sh" style="align-items:flex-end;background:none"><div class="mc" style="min-height:0;border-radius:18px 18px 0 0;padding:22px 16px calc(20px + env(safe-area-inset-bottom,0px));max-width:520px;margin:0 auto"><button class="x" data-z>✕</button><h3 style="margin:0 0 6px">${t('via')}</h3><p style="font-size:13px;color:var(--mu);margin-bottom:14px">${t('viahint')}</p><button class="so" data-w>${ic('chat',20)} WhatsApp</button><button class="so" data-t>${ic('send',20)} Telegram</button><button class="so" data-i>${ic('camera',20)} Instagram</button></div></div>`;
@@ -341,7 +347,6 @@ function chooser(text){const s=document.createElement('div');s.className='md';s.
   s.querySelector('[data-t]').onclick=()=>{cp();window.open('https://t.me/'+TG+'?text='+encodeURIComponent(text),'_blank');done()};
   s.querySelector('[data-i]').onclick=()=>{cp();toast(t('copied'));window.open('https://ig.me/m/'+IG,'_blank');done()}}
 const close=()=>{$('ov').innerHTML='';document.body.style.overflow='';edit=null;view='';grid()};
-const wa=txt=>window.open('https://wa.me/'+PHONE+'?text='+encodeURIComponent(txt),'_blank');
 function open1(id){try{db&&db.ref('views/'+id).transaction(v=>(v||0)+1).catch(()=>{})}catch(e){}const p=find(id),m=p.media.length?p.media:[''];
   const specs=L(p,'sr','st')||'',rows=specs.split('\n').map(l=>l.split(':')).filter(a=>a[0].trim()&&a[1]!==undefined);
   modal(`<div class="pg"><div><div class="mn" id="mn">${m[0]?(isVid(m[0])?`<video src="${esc(m[0])}" controls playsinline></video>`:`<img src="${esc(m[0])}" alt="">`):esc(p.emoji||'📦')}</div>${m.length>1?`<div class="th">${m.map((u,i)=>`<div class="tb ${i?'':'on'}" data-i="${i}">${med(u)}</div>`).join('')}</div>`:''}</div>
@@ -369,7 +374,7 @@ function pgOrders(pg){const lab={cart:t('cartT'),fav:t('favT'),hist:t('hist')};l
   pg.innerHTML=`<div class="w2">${h}</div>`;
   const on=(a,f)=>pg.querySelectorAll('['+a+']').forEach(b=>b.onclick=e=>f(b.getAttribute(a),e));
   on('data-s',k=>{sub=k;renderPage()});on('data-m',k=>{add(k,-1);renderPage()});on('data-p',k=>{add(k);renderPage()});
-  on('data-u',(k,e)=>{e.stopPropagation();fav=fav.filter(x=>x!==k);keep();renderPage()});on('data-a',(k,e)=>{e.stopPropagation();add(k)});on('data-o',(k,e)=>{if(!e.target.closest('button'))open1(k)});on('data-rv',k=>{const a=k.split('|');reviewForm(a[0],a[1])});
+  on('data-u',(k,e)=>{e.stopPropagation();fav=fav.filter(x=>x!==k);keep();renderPage()});on('data-a',(k,e)=>{e.stopPropagation();add(k)});on('data-o',(k,e)=>{if(!e.target.closest('button'))open1(k)});on('data-rv',k=>{const a=k.split('|');reviewForm(a[0],a[1])});on('data-oc',k=>{if(!confirm(lang==='ru'?'Отменить заказ?':'Бекор кардани фармоиш?'))return;db.ref('orders/'+k).remove();myOrders=myOrders.filter(x=>x.key!==k);saveOrd();renderPage()});
   if($('go'))bindCart(ids,tot);pg.querySelectorAll('[data-dm]').forEach(e=>e.onclick=()=>{dm=e.dataset.dm;renderPage()})}
 function pgSup(pg){pg.innerHTML=`<div class="w2"><div class="pb" style="display:flex;gap:14px;align-items:center"><div class="ic2">${ic('chat',26)}</div><div><b style="font-size:17px">${t('supt')}</b><div style="font-size:13px;color:var(--mu);margin-top:4px;line-height:1.4">${t('supd')}</div></div></div><a class="so" href="https://wa.me/${PHONE}" target="_blank">${ic('chat',20)} WhatsApp (+${PHONE})</a><a class="so" href="https://t.me/${TG}" target="_blank">${ic('send',20)} Telegram (@${TG})</a><a class="so" href="https://instagram.com/${IG}" target="_blank">${ic('camera',20)} Instagram (@${IG})</a></div>`}
 function pgProf(pg){const u=auth&&auth.currentUser,p=prof||{};
@@ -390,6 +395,11 @@ function loginG(){
   if(!auth)return toast('Нет связи с Firebase. Проверьте интернет');
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{const c=e.code||String(e);
     toast(c==='auth/unauthorized-domain'?'Добавьте домен сайта в Firebase → Authentication → Settings → Authorized domains':c==='auth/operation-not-allowed'?'В Firebase не включён вход через Google (Authentication → Sign-in method)':c==='auth/popup-blocked'?'Браузер заблокировал окно. Разрешите всплывающие окна для сайта':c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request'?'Окно входа закрыто':'Ошибка входа: '+c)})}
+function emailAuth(){if(!auth)return toast('Нет связи с Firebase');modal(`<h2 style="margin-bottom:10px">${t('em_h')}</h2><input class="in" id="em" type="email" placeholder="${t('em_mail')}" autocomplete="email"><input class="in" id="ep" type="password" placeholder="${t('em_pw')}" autocomplete="current-password"><p style="font-size:13px;margin:2px 0 8px"><a href="#" id="ef" style="color:var(--ic)">${t('em_forgot')}</a></p>`,`<div class="bar"><button class="b o" id="eb">${t('back')}</button><button class="b" id="ein">${t('em_in')}</button><button class="b g" id="eup">${t('em_up')}</button></div>`);
+  const err=e=>{const c=e.code||'';toast(c==='auth/email-already-in-use'?t('em_used'):c==='auth/invalid-email'?t('em_bad'):c==='auth/weak-password'?t('em_weak'):c==='auth/too-many-requests'?t('em_many'):c==='auth/operation-not-allowed'?'В Firebase не включён вход по почте':t('em_wrong'))};
+  $('eb').onclick=()=>{close();drawGate()};$('ef').onclick=e=>{e.preventDefault();const m=$('em').value.trim();if(!m)return toast(t('em_bad'));auth.sendPasswordResetEmail(m).then(()=>toast(t('em_sent')),err)};
+  $('ein').onclick=()=>{const m=$('em').value.trim(),p=$('ep').value;if(!m||p.length<6)return toast(t('em_weak'));auth.signInWithEmailAndPassword(m,p).then(()=>{},err)};
+  $('eup').onclick=()=>{const m=$('em').value.trim(),p=$('ep').value;if(!m||p.length<6)return toast(t('em_weak'));auth.createUserWithEmailAndPassword(m,p).then(()=>{},err)}}
 /* ---------- Регистрация при входе ---------- */
 let prof=null,authReady=false,gateOK=false;
 const DIST=[['ism','Исмоили Сомони','Исмоили Сомонӣ'],['sino','Сино','Сино'],['fird','Фирдавси','Фирдавсӣ'],['shoh','Шохмансур','Шоҳмансур'],['oth','Другой район','Ноҳияи дигар']];
@@ -410,14 +420,14 @@ function drawGate(){const g=$('gate');if(!auth){g.style.display='none';return}
   const lg=`<div class="gtl"><button data-gl="ru" class="${lang==='ru'?'on':''}">RU</button><button data-gl="tj" class="${lang==='tj'?'on':''}">TJ</button></div>`,star='<svg viewBox="0 0 24 24" width="26" height="26" style="display:block;margin:0 auto 6px"><path fill="#e6c286" d="M12 2c.6 4.8 3.2 7.4 8 8-4.8.6-7.4 3.2-8 8-.6-4.8-3.2-7.4-8-8 4.8-.6 7.4-3.2 8-8z"/></svg>',head=`${star}<div class="gtm">Insofstore<i>.tj</i></div>`;
   if(!authReady){g.innerHTML=`<div class="gt">${head}<div class="spin" style="border-color:rgba(255,255,255,.25);border-top-color:#fff"></div></div>`;return}
   if(!u){const ia=inApp();let btns='',note='';
-    if(ia){if(isIOS){btns=`<a class="b gtp" href="x-safari-https://${location.host}${location.pathname}${location.search}">${ic('globe',20)} ${t('gt_safari')}</a>`;note=t('gt_hint_ios')}else{if(isAnd)btns=`<a class="b gtp" href="intent://${location.host}${location.pathname}${location.search}#Intent;scheme=https;package=com.android.chrome;end">${ic('globe',20)} ${t('gt_chrome')}</a>`;note=t('gt_hint_and')}}
+    if(ia){if(isAnd)btns=`<a class="b gtp" href="intent://${location.host}${location.pathname}${location.search}#Intent;scheme=https;package=com.android.chrome;end">${ic('globe',20)} ${t('gt_chrome')}</a>`;btns+=`<button class="b gtp" id="gcp">${ic('copy',20)} ${t('gt_copy')}</button>`;note=isIOS?t('gt_hint_ios'):t('gt_hint_and')}
     else btns=`<button class="b gtp" id="gg">${ic('user',20)} ${t('login')}</button>`;
-    btns+=`<button class="b gtg" id="gk">${gforce?t('back'):t('gt_skip')}</button>`;
+    btns+=`<button class="b gtg" id="ge">${ic('send',20)} ${t('gt_em')}</button><button class="b gtg" id="gk">${gforce?t('back'):t('gt_skip')}</button>`;
     g.innerHTML=`${lg}<div class="gt">${head}<h1>${t('gt_h')}</h1><p>${t('gt_s')}</p><div class="gtb">${btns}</div>${note?`<p class="gtn">${note}</p>`:''}</div>`;
-    if($('gg'))$('gg').onclick=loginG;$('gk').onclick=()=>{gforce=false;gateOK=true;drawGate()}}
+    if($('gg'))$('gg').onclick=loginG;if($('gcp'))$('gcp').onclick=()=>{try{navigator.clipboard.writeText(location.href)}catch(e){}toast(t('copied2'))};if($('ge'))$('ge').onclick=emailAuth;$('gk').onclick=()=>{gforce=false;gateOK=true;drawGate()}}
   else{const n=(u.displayName||'').split(' '),p=prof||{first:n[0]||'',last:n.slice(1).join(' '),phone:me.phone||''};
-    g.innerHTML=`${lg}<div class="gt">${head}<h1 style="font-size:28px">${t('gt_h')}</h1><p>${t('gt_f')}</p><div class="gcard">${fields('g_',p)}<button class="b" id="gs" style="width:100%;margin-top:6px">${t('gt_go')}</button></div></div>`;
-    $('gs').onclick=()=>{const v=readF('g_');if(!v)return;saveProf(v);drawGate();if(tab!=='home')renderPage()}}
+    g.innerHTML=`${lg}<div class="gt">${head}<h1 style="font-size:28px">${t('gt_h')}</h1><p>${t('gt_f')}</p><div class="gcard">${fields('g_',p)}<button class="b" id="gs" style="width:100%;margin-top:6px">${t('gt_go')}</button><button class="b gtg" id="glg" style="width:100%;margin-top:8px">${t('logout')}</button></div></div>`;
+    $('gs').onclick=()=>{const v=readF('g_');if(!v)return;saveProf(v);drawGate();if(tab!=='home')renderPage()};$('glg').onclick=()=>auth.signOut()}
   g.querySelectorAll('[data-gl]').forEach(b=>b.onclick=()=>{setL(b.dataset.gl);drawGate()})}
 /* ---------- Баннеры ---------- */
 let BAN=[],ci=0,eb=null;
@@ -433,7 +443,7 @@ function bBind(){if($('nb'))$('nb').onclick=()=>{eb={id:'b'+Date.now(),img:'',tr
 function bcollect(){const g=i=>$(i).value;Object.assign(eb,{tr:g('bt'),tt:g('btj'),sr:g('bs'),st:g('bsj'),link:g('bl').trim(),ord:+g('bo')||0})}
 function bform(){view='form';modal(`<h2 style="margin:6px 0 12px">Баннер</h2><div class="fs"><span class="lb">Картинка (широкая, лучше 1300×500)</span><input class="in" type="file" id="bf" accept="image/*">${eb.img?`<img src="${esc(eb.img)}" style="width:100%;border-radius:10px;margin-bottom:8px" alt="">`:''}<input class="in" id="bt" placeholder="Заголовок (русский)" value="${esc(eb.tr)}"><input class="in" id="btj" placeholder="Сарлавҳа (тоҷикӣ)" value="${esc(eb.tt)}"><input class="in" id="bs" placeholder="Подпись (русский)" value="${esc(eb.sr)}"><input class="in" id="bsj" placeholder="Тавзеҳ (тоҷикӣ)" value="${esc(eb.st)}"><input class="in" id="bl" placeholder="Ссылка (необязательно): https://… или sup — раздел Поддержка" value="${esc(eb.link||'')}"><input class="in" id="bo" type="number" placeholder="Порядок: 1, 2, 3…" value="${eb.ord||''}"></div>`,`<div class="bar"><button class="b o" id="bk">Назад</button><button class="b" id="sv">Сохранить</button></div>`);
   $('bk').onclick=admin;
-  $('bf').onchange=async()=>{bcollect();toast('Загрузка…');try{eb.img=await shrink($('bf').files[0],1300,.72)}catch(e){toast('Ошибка загрузки')}bform()};
+  $('bf').onchange=async()=>{bcollect();toast('Загрузка…');try{eb.img=await uploadImg($('bf').files[0],1300,.72)}catch(e){toast('Ошибка загрузки')}bform()};
   $('sv').onclick=()=>{bcollect();if(!eb.img&&!eb.tr&&!eb.tt)return toast('Добавьте картинку или текст');const id=eb.id,o=JSON.parse(JSON.stringify(eb));delete o.id;db.ref('banners/'+id).set(o).then(()=>{toast('Сохранено ✓');atab='b';admin()},()=>toast('Нет доступа'))}}
 /* ---------- Админ-панель ---------- */
 let view='',atab='p',aq='',orders=[],ordRef=null,me={uid:'',name:'',phone:'',email:''};
@@ -442,7 +452,7 @@ function admin(){if(!isAdm())return;view='admin';
   const avg=S.products.length?Math.round(S.products.reduce((a,p)=>a+p.price,0)/S.products.length):0,nw=orders.filter(o=>o.status==='new').length;
   const l=S.products.filter(p=>!aq||((p.tr||'')+' '+(p.tt||'')).toLowerCase().includes(aq.toLowerCase()));
   const body=atab==='g'?settingsHtml():atab==='s'?'<div id="sts"><p style="color:var(--mu)">Загрузка…</p></div>':atab==='b'?bannersHTML():atab==='p'?`<button class="b" id="nw" style="width:100%;margin-bottom:10px">➕ Новый товар</button><input class="in" id="as" placeholder="🔍 Поиск по товарам" value="${esc(aq)}">`+(l.map(p=>`<div class="ar ${p.hidden?'out':''}"><div class="im">${med(p.media[0],p.emoji)}</div><div style="flex:1;min-width:140px"><b>${esc(p.tr||p.tt)}</b><br>${p.price} TJS${disc(p)?` <s style="color:var(--mu)">${p.old}</s>`:''}<br><span class="cx">${esc(T.ru[p.cat])}</span>${p.hidden?'<span class="cx off">скрыт</span>':''}<span class="cx">остаток: ${p.stock==null?'∞':p.stock}</span></div><div class="ab"><button data-e="${p.id}" title="Изменить">${ic('pencil',16)}</button><button data-c="${p.id}" title="Дублировать">${ic('copy',16)}</button><button data-h="${p.id}" title="Показать/скрыть">${ic(p.hidden?'eye':'eyeoff',16)}</button><button data-d="${p.id}" title="Удалить">${ic('trash',16)}</button></div></div>`).join('')||'<p style="color:var(--mu)">Ничего нет</p>')
-  :(orders.map(o=>`<div class="pb"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(o.name)} · ${esc(o.phone)}</b><span class="cx ${ost(o)==='new'?'off':''}">${{new:'новый',confirmed:'подтверждён',delivered:'получен'}[ost(o)]}</span></div><div style="font-size:12px;color:var(--mu);margin:4px 0">${new Date(o.date).toLocaleString('ru-RU')}${o.addr?' · 📍 '+esc(o.addr):''}</div>${(o.items||[]).map(i=>`<div style="font-size:13px">• ${esc(i.n)} × ${i.q} = ${i.p*i.q} TJS</div>`).join('')}<div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><b style="flex:1">${o.total} TJS</b><button class="b o" data-o="${o.key}" style="flex:none;padding:7px 10px;font-size:12px">${{new:'✓ Подтвердить заказ',confirmed:'📦 Клиент получил',delivered:'↩ Вернуть'}[ost(o)]}</button><button class="b o" data-x="${o.key}" style="flex:none;padding:7px 10px;font-size:12px">🗑️</button></div></div>`).join('')||'<p style="color:var(--mu)">Заказов пока нет</p>');
+  :(`<button class="b" id="csv" style="width:100%;margin-bottom:10px">⬇ Экспорт заказов (CSV)</button>`+(orders.map(o=>`<div class="pb"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(o.name)} · ${esc(o.phone)}</b><span class="cx ${ost(o)==='new'?'off':''}">${{new:'новый',confirmed:'подтверждён',delivered:'получен'}[ost(o)]}</span></div><div style="font-size:12px;color:var(--mu);margin:4px 0">${new Date(o.date).toLocaleString('ru-RU')}${o.addr?' · 📍 '+esc(o.addr):''}</div>${(o.items||[]).map(i=>`<div style="font-size:13px">• ${esc(i.n)} × ${i.q} = ${i.p*i.q} TJS</div>`).join('')}<div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><b style="flex:1">${o.total} TJS</b><button class="b o" data-o="${o.key}" style="flex:none;padding:7px 10px;font-size:12px">${{new:'✓ Подтвердить заказ',confirmed:'📦 Клиент получил',delivered:'↩ Вернуть'}[ost(o)]}</button><button class="b o" data-x="${o.key}" style="flex:none;padding:7px 10px;font-size:12px">🗑️</button></div></div>`).join('')||'<p style="color:var(--mu)">Заказов пока нет</p>'));
   modal(`<h2 style="margin:6px 0 14px">⚙️ Админ-панель</h2><div class="stg"><div class="sc"><b>${S.products.length}</b><span>Товаров</span></div><div class="sc"><b>${S.products.filter(p=>!p.hidden).length}</b><span>Видно покупателям</span></div><div class="sc"><b>${avg}</b><span>Средняя цена, TJS</span></div><div class="sc"><b>${nw}</b><span>Новых заказов</span></div></div><div class="tabs"><button class="${atab==='p'?'on':''}" id="tp">${ic('grid',16)} Товары</button><button class="${atab==='o'?'on':''}" id="to">${ic('box',16)} Заказы${nw?' ('+nw+')':''}</button><button class="${atab==='b'?'on':''}" id="tb">${ic('image',16)} Баннеры</button><button class="${atab==='s'?'on':''}" id="ts">${ic('chart',16)} ${t('stats_t')}</button><button class="${atab==='g'?'on':''}" id="tg">${ic('sliders',16)} Настройки</button></div>${body}`);
   $('tp').onclick=()=>{atab='p';admin()};$('to').onclick=()=>{atab='o';admin()};$('tb').onclick=()=>{atab='b';admin()};$('ts').onclick=()=>{atab='s';admin()};$('tg').onclick=()=>{atab='g';admin()};if(atab==='s')loadStats();if(atab==='g')bindSettings();bBind();
   if($('nw'))$('nw').onclick=()=>{edit={id:'p'+Date.now(),cat:'audio',price:0,old:0,badge:'',rating:5,emoji:'📦',tr:'',tt:'',dr:'',dt:'',sr:'',st:'',media:[]};form()};
@@ -452,8 +462,9 @@ function admin(){if(!isAdm())return;view='admin';
   on('data-c',k=>{edit=JSON.parse(JSON.stringify(find(k)));edit.id='p'+Date.now();edit.tr+=' (копия)';edit.hidden=true;form()});
   on('data-h',k=>db.ref('products/'+k+'/hidden').set(!find(k).hidden));
   on('data-d',k=>{if(confirm('Удалить товар навсегда?'))db.ref('products/'+k).remove()});
-  on('data-o',k=>{const o=orders.find(x=>x.key===k);db.ref('orders/'+k+'/status').set({new:'confirmed',confirmed:'delivered',delivered:'confirmed'}[ost(o)])});
-  on('data-x',k=>{if(confirm('Удалить заказ?'))db.ref('orders/'+k).remove()})}
+  on('data-o',k=>{const o=orders.find(x=>x.key===k),nx={new:'confirmed',confirmed:'delivered',delivered:'confirmed'}[ost(o)];db.ref('orders/'+k+'/status').set(nx);if(nx==='confirmed')(o.items||[]).forEach(i=>{if(find(i.id)&&find(i.id).stock!=null)db.ref('products/'+i.id+'/stock').transaction(v=>v==null?null:Math.max(0,(v||0)-i.q))})});
+  on('data-x',k=>{if(!confirm('Удалить заказ?'))return;const o=orders.find(x=>x.key===k);if(o&&ost(o)!=='new')(o.items||[]).forEach(i=>{if(find(i.id)&&find(i.id).stock!=null)db.ref('products/'+i.id+'/stock').transaction(v=>v==null?null:(v||0)+i.q)});db.ref('orders/'+k).remove()})}
+  if($('csv'))$('csv').onclick=()=>{const rows=[['Дата','Имя','Телефон','Адрес','Товары','Сумма','Статус']];orders.forEach(o=>rows.push([new Date(o.date).toLocaleString('ru-RU'),o.name||'',o.phone||'',o.addr||'',(o.items||[]).map(i=>i.n+' x'+i.q).join('; '),o.total,ost(o)]));const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='orders.csv';a.click()};
 function collect(){const g=i=>$(i).value;const k=g('fk');Object.assign(edit,{tr:g('ft'),tt:g('ftj'),price:+g('fp')||0,old:+g('fo')||0,stock:k===''?null:Math.max(0,+k||0),hidden:$('fh').checked,cat:g('fc'),badge:g('fb'),sub:g('fs2'),dr:g('fd'),dt:g('fdt'),sr:g('fs'),st:g('fst'),emoji:g('fe')||'📦'});const v=g('fv').trim();if(v&&!edit.media.includes(v))edit.media.push(v);$('fv').value=''}
 function form(){view='form';const isNew=!S.products.some(p=>p.id===edit.id),sel=(id,arr,cur)=>`<select class="in" id="${id}">${arr.map(a=>`<option value="${a[0]}" ${a[0]===cur?'selected':''}>${a[1]}</option>`).join('')}</select>`;
   modal(`<h2 style="margin:6px 0 12px">${isNew?'➕ Новый товар':'✏️ Редактирование'}</h2><div class="fg">
@@ -464,26 +475,28 @@ function form(){view='form';const isNew=!S.products.some(p=>p.id===edit.id),sel=
   <div class="fs" style="grid-column:1/-1"><span class="lb">Фото (первое — главное, нажмите на фото, чтобы сделать главным)</span><input class="in" type="file" id="fm" accept="image/*" multiple><div class="pv">${edit.media.map((u,i)=>`<span data-k="${i}">${isVid(u)?'🎬':`<img src="${esc(u)}" alt="">`}<a href="#" data-r="${i}">✕</a></span>`).join('')}</div><input class="in" id="fv" placeholder="Ссылка на видео .mp4 (по желанию)"></div></div>`,
   `<div class="bar"><button class="b o" id="bk">Назад</button><button class="b" id="sv">Сохранить</button></div>`);
   $('bk').onclick=admin;
-  $('fm').onchange=async()=>{collect();toast('Загрузка…');try{for(const f of $('fm').files)edit.media.push(await shrink(f))}catch(e){toast('Ошибка загрузки')}form()};
+  $('fm').onchange=async()=>{collect();toast('Загрузка…');try{for(const f of $('fm').files)edit.media.push(await uploadImg(f))}catch(e){toast('Ошибка загрузки')}form()};
   document.querySelectorAll('[data-k]').forEach(s=>s.onclick=()=>{collect();const i=+s.dataset.k;edit.media.unshift(edit.media.splice(i,1)[0]);form()});
   document.querySelectorAll('[data-r]').forEach(a=>a.onclick=e=>{e.preventDefault();e.stopPropagation();collect();edit.media.splice(+a.dataset.r,1);form()});
   $('sv').onclick=()=>{collect();if(!(edit.tr||edit.tt)||!edit.price)return toast('Укажите название и цену');const id=edit.id,o=JSON.parse(JSON.stringify(edit));delete o.id;db.ref('products/'+id).set(o).then(()=>{toast('Сохранено ✓');atab='p';admin()},()=>toast('Нет доступа'))}}
 const shrink=(f,mx=800,q=.7)=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const k=Math.min(1,mx/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',q))};i.onerror=no;i.src=r.result};r.onerror=no;r.readAsDataURL(f)});
-$('q').oninput=e=>{query=e.target.value;if(tab!=='home')show('home');grid();trackQ()};$('so').onchange=e=>{sort=e.target.value;grid()};
+let stRef=null;
+const uploadImg=async(f,mx=800,q=.7)=>{if(stRef){try{const d=await shrink(f,mx,q),blob=await (await fetch(d)).blob(),path='img/'+Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.jpg',snap=await stRef.ref(path).put(blob,{contentType:'image/jpeg'});return await snap.ref.getDownloadURL()}catch(e){}}return shrink(f,mx,q)};
+$('q').oninput=e=>{query=e.target.value;if(tab!=='home')show('home');clearTimeout(qd);qd=setTimeout(()=>{grid();trackQ()},200)};$('so').onchange=e=>{sort=e.target.value;grid()};
 $('lru').onclick=()=>setL('ru');$('ltj').onclick=()=>setL('tj');
 function setL(l){lang=l;try{localStorage.setItem('is_lang',l)}catch(e){}ui();if($('gate').style.display==='flex')drawGate()}
 $('n1').onclick=()=>show('home');$('n2').onclick=()=>show('orders');$('n3').onclick=()=>show('sup');$('n4').onclick=()=>show('prof');$('adm').onclick=admin;
 $('hs').onclick=()=>show('sup');$('hf').onclick=()=>show('orders','fav');$('hc').onclick=()=>show('orders','cart');$('hp').onclick=()=>show('prof');
 applyTheme();try{me.phone=localStorage.getItem('is_ph')||''}catch(e){}
 $('trk').onscroll=()=>{const tr=$('trk');ci=Math.round(tr.scrollLeft/tr.clientWidth);mark()};
-setInterval(()=>{const tr=$('trk'),n=tr.children.length;if(tab!=='home'||document.hidden||n<2)return;ci=(ci+1)%n;tr.scrollTo({left:ci*tr.clientWidth,behavior:'smooth'})},4500);
+setInterval(()=>{const tr=$('trk'),n=tr.children.length;if(tab!=='home'||document.hidden||n<2||$('ov').children.length)return;ci=(ci+1)%n;tr.scrollTo({left:ci*tr.clientWidth,behavior:'smooth'})},4500);
 document.querySelectorAll('[data-ic]').forEach(e=>e.innerHTML=ic(e.dataset.ic));document.querySelectorAll('.pk').forEach(e=>e.onclick=()=>infoModal(e.dataset.i));
 const ADMIN_EMAIL='umarisoev12345@gmail.com';let db=null,auth=null;
 ui();keep();$('grid').innerHTML=Array(6).fill('<div class="sk"></div>').join('');
 try{firebase.initializeApp({apiKey:"AIzaSyD0-O2Hq-P9zeRzcExwQ90Z43xUMR0IwHQ",authDomain:"insofstore-a2a18.firebaseapp.com",databaseURL:"https://insofstore-a2a18-default-rtdb.firebaseio.com",projectId:"insofstore-a2a18",appId:"1:866226161465:web:cc004285c0e207245b0ae8"});
-  db=firebase.database();auth=firebase.auth();
+  db=firebase.database();auth=firebase.auth();try{stRef=firebase.storage()}catch(e){stRef=null}
   db.ref('settings').on('value',s=>{ST=s.val()||{};if(tab==='orders')renderPage()});db.ref('ratings').on('value',s=>{RT=s.val()||{};grid()});db.ref('banners').on('value',s=>{const v=s.val()||{};BAN=Object.keys(v).map(k=>({...v[k],id:k})).sort((a,b)=>(a.ord||0)-(b.ord||0));renderCar();if(view==='admin')admin()});
-  drawGate();setTimeout(()=>{if(!authReady){authReady=true;gateOK=true;drawGate()}},8000);
+  drawGate();
   db.ref('products').on('value',s=>{const v=s.val()||{};S.products=Object.keys(v).map(k=>({...v[k],id:k,media:v[k].media||[]}));ui();if(view==='admin')admin()},()=>{S.products=SEED;ui()});
   auth.onAuthStateChanged(u=>{authReady=true;me={uid:u?u.uid:'',name:u&&u.displayName||'',phone:me.phone,email:u?u.email:''};
     $('adm').style.display=isAdm()?'block':'none';
